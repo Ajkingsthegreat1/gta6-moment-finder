@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GTA 6 Moment Finder</title>
+<style>
+:root{--bg:#fafaf7;--card:#fff;--text:#16181d;--mute:#666b75;--line:#e3e3dc;--acc:#38bdf8;--accd:#0b6fa0}
+@media (prefers-color-scheme:dark){:root{--bg:#0f1115;--card:#171a21;--text:#eef0f4;--mute:#9aa0ac;--line:#262a33;--accd:#7dd3fc}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.5 system-ui,-apple-system,sans-serif}
+.w{max-width:640px;margin:0 auto;padding:24px 16px 48px}
+h1{font-size:26px;margin:8px 0 6px}
+p.s{color:var(--mute);margin:0 0 20px}
+input{width:100%;padding:14px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--text);font:inherit}
+button{font:inherit;cursor:pointer}
+.go{width:100%;margin-top:12px;padding:14px;border:0;border-radius:10px;background:var(--acc);color:#04202e;font-weight:700}
+.go:disabled{opacity:.5}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;margin-top:12px}
+.card h3{margin:0 0 4px;font-size:17px}
+.t{font-size:13px;color:var(--accd);font-weight:600}
+.card p{margin:6px 0 10px;color:var(--mute);font-size:14px}
+.a{display:inline-block;padding:8px 12px;border-radius:8px;border:1px solid var(--line);color:var(--text);text-decoration:none;font-size:14px}
+.row{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px}
+.err{color:#d6453d;margin-top:12px;font-size:14px}
+</style>
+</head>
+<body>
+<div class="w">
+<h1>GTA 6 Moment Finder</h1>
+<p class="s">Paste a YouTube link. Get the best moments to clip.</p>
+<input id="u" type="url" placeholder="https://youtube.com/watch?v=...">
+<button class="go" id="go">Find moments</button>
+<div id="err" class="err"></div>
+<div id="out"></div>
+<div id="after" class="row" style="display:none"></div>
+</div>
+<script>
+const $=id=>document.getElementById(id), LIMIT=3;
+const used=()=>{try{const d=JSON.parse(localStorage.getItem('mf')||'{}');return d.t===new Date().toDateString()?d.n:0}catch(e){return 0}};
+const bump=()=>{try{localStorage.setItem('mf',JSON.stringify({t:new Date().toDateString(),n:used()+1}))}catch(e){}};
+const vid=u=>{const m=u.match(/(?:v=|youtu\.be\/|shorts\/|embed\/|live\/)([\w-]{11})/);return m?m[1]:null};
+const fmt=s=>{s=Math.floor(s);const m=Math.floor(s/60),r=s%60;return m+':'+String(r).padStart(2,'0')};
+const esc=s=>{const d=document.createElement('div');d.textContent=String(s==null?'':s);return d.innerHTML};
+$('go').onclick=async()=>{
+  $('err').textContent='';$('out').innerHTML='';$('after').style.display='none';
+  const id=vid($('u').value.trim());
+  if(!id){$('err').textContent='That doesn’t look like a YouTube link.';return}
+  if(used()>=LIMIT){$('err').textContent='You’ve used your 3 free searches today. Come back tomorrow.';return}
+  const b=$('go');b.disabled=true;b.textContent='Finding moments...';
+  try{
+    const r=await fetch('/.netlify/functions/moments?id='+id);
+    const d=await r.json();
+    if(!r.ok){$('err').textContent=d.error||'Something broke.';return}
+    bump();
+    $('out').innerHTML=d.moments.map(m=>'<div class="card"><h3>'+esc(m.title)+'</h3><div class="t">'+fmt(m.start_seconds)+' to '+fmt(m.end_seconds)+'</div><p>'+esc(m.why)+'</p><a class="a" target="_blank" rel="noopener" href="https://youtu.be/'+id+'?t='+Math.floor(m.start_seconds)+'">Open at this moment</a></div>').join('');
+    const tw='Found '+d.moments.length+' clippable GTA 6 moments in one video in seconds with this free tool.';
+    $('after').innerHTML='<a class="a" target="_blank" rel="noopener" href="https://www.capcut.com">Edit in CapCut</a><a class="a" target="_blank" rel="noopener" href="https://twitter.com/intent/tweet?text='+encodeURIComponent(tw)+'&url='+encodeURIComponent(location.href)+'">Share on X</a>';
+    $('after').style.display='flex';
+  }catch(e){$('err').textContent='Something broke. Try again in a minute.'}
+  finally{b.disabled=false;b.textContent='Find moments'}
+};
+</script>
+</body>
+</html>
