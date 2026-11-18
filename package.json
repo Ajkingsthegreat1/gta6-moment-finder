@@ -1,0 +1,9 @@
+{
+  "name": "gta6-moment-finder",
+  "version": "1.0.0",
+  "type": "module",
+  "dependencies": {
+    "@netlify/blobs": "^8.1.0",
+    "youtube-transcript": "^1.2.1"
+  }
+}
